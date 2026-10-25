@@ -1,0 +1,67 @@
+# Dependencies
+node_modules/
+**/node_modules/
+jspm_packages/
+
+# Environment variables and secrets
+.env
+**/.env
+.env.*
+**/.env.*
+!.env.example
+!**/.env.example
+
+# Build output
+dist/
+**/dist/
+build/
+**/build/
+coverage/
+.vite/
+.turbo/
+*.tsbuildinfo
+
+# Logs and temporary files
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+*.tmp
+*.temp
+
+# Runtime and test data
+pids/
+*.pid
+*.seed
+*.pid.lock
+lib-cov/
+.nyc_output
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+.node_repl_history
+*.tgz
+.yarn-integrity
+.npm/
+.eslintcache
+
+# Database files
+*.sqlite
+*.sqlite3
+*.db
+
+# Uploaded documents and private local storage
+uploads/
+**/uploads/
+storage/private/
+private-uploads/
+
+# Local editor and operating-system files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

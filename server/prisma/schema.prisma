@@ -1,0 +1,416 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ApplicationStage {
+  SUBMITTED
+  SCRUTINY
+  RE_SCRUTINY
+  EVC_SCHEDULED
+  EVC_COMPLETED
+  SHC_HEARING
+  SAC_APPEAL
+  APPROVED_CONDITIONAL
+  APPROVAL_GRANTED
+  REJECTED
+}
+
+enum ApplicationCategory {
+  NEW_INSTITUTE
+  EOA_EXISTING
+  INTAKE_INCREASE
+  SUPERNUMERARY_SEATS
+  CHANGE_OF_SITE
+  WOMEN_TO_COED
+  CLOSURE
+}
+
+enum Region {
+  NORTHERN
+  NORTH_WEST
+  WESTERN
+  CENTRAL
+  SOUTH_WEST
+  SOUTHERN
+  EASTERN
+  SOUTH_CENTRAL
+}
+
+enum InstitutionType {
+  PRIVATE_SELF_FINANCED
+  GOVERNMENT
+  GOVT_AIDED
+  DEEMED_UNIVERSITY
+  STATE_UNIVERSITY
+}
+
+enum PriorityLevel {
+  NORMAL
+  MEDIUM
+  HIGH
+  CRITICAL_OVERDUE
+}
+
+enum UserRole {
+  SCRUTINY_OFFICER
+  REGIONAL_OFFICER
+  EVC_EXPERT
+  EVC_CONVENER
+  SAC_SHC_MEMBER
+  MEMBER_SECRETARY
+  SYSTEM_ADMIN
+  INSTITUTION_USER
+}
+
+enum EVCStatus {
+  PENDING_CONSTITUTION
+  CONSTITUTED
+  SCHEDULED
+  VISIT_COMPLETED
+  REPORT_SUBMITTED
+  REPORT_OVERDUE
+}
+
+enum ComplianceStatus {
+  ACTIVE_PENDING
+  UNDER_REVIEW
+  VERIFIED_SATISFACTORY
+  OVERDUE_ESCALATED
+}
+
+enum DocumentType {
+  LAND_LEASE
+  FIRE_SAFETY_NOC
+  BUILDING_OCCUPANCY
+  NBA_ACCREDITATION
+  FDR_ENDOWMENT
+}
+
+enum ValidityStatus {
+  VALID
+  EXPIRING_SOON
+  CRITICAL_WARNING
+  EXPIRED
+}
+
+model Institution {
+  id                   String            @id @default(uuid())
+  permanentInstituteId String            @unique
+  name                 String
+  trustName            String
+  institutionType      InstitutionType   @default(PRIVATE_SELF_FINANCED)
+  region               Region
+  state                String
+  district             String?
+  address              String?
+  pincode              String?
+  contactEmail         String            @unique
+  contactPhone         String?
+  isVerified           Boolean           @default(true)
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+
+  users                SystemUser[]
+  applications         Application[]
+  documents            ApplicationDocument[]
+  notifications        Notification[]
+
+  @@index([region])
+  @@index([permanentInstituteId])
+}
+
+model SystemUser {
+  id                       String       @id @default(uuid())
+  username                 String       @unique
+  email                    String       @unique
+  passwordHash             String       @default("")
+  fullName                 String
+  role                     UserRole
+  region                   Region?
+  department               String?
+  institutionId            String?
+  institution              Institution? @relation(fields: [institutionId], references: [id])
+  isActive                 Boolean      @default(true)
+  isEmailVerified          Boolean      @default(false)
+  emailVerificationToken   String?
+  emailVerificationExpires DateTime?
+  passwordResetToken       String?
+  passwordResetExpires     DateTime?
+  tokenVersion             Int          @default(0)
+  lastLoginAt              DateTime?
+  failedLoginAttempts      Int          @default(0)
+  lockedUntil              DateTime?
+  createdAt                DateTime     @default(now())
+  updatedAt                DateTime     @updatedAt
+
+  uploadedDocuments        ApplicationDocument[]
+  notifications            Notification[]
+
+  @@index([role])
+  @@index([username])
+  @@index([institutionId])
+}
+
+model Application {
+  id                   String              @id @default(uuid())
+  applicationNumber    String              @unique
+  permanentInstituteId String
+  instituteName        String
+  trustName            String
+  category             ApplicationCategory
+  institutionType      InstitutionType
+  region               Region
+  state                String
+  currentStage         ApplicationStage    @default(SUBMITTED)
+  priority             PriorityLevel       @default(NORMAL)
+  totalAgeingDays      Int                 @default(0)
+  stageAgeingDays      Int                 @default(0)
+  submissionDate       DateTime            @default(now())
+  assignedOfficerId    String?
+  assignedOfficer      String?
+  pendingWithRole      UserRole            @default(SCRUTINY_OFFICER)
+  isDeficient          Boolean             @default(false)
+  deficiencyCount      Int                 @default(0)
+  evcScheduledDate     DateTime?
+  landAreaAcres        Float
+  approvedIntake       Int
+  requestedIntake      Int
+  academicCycle        String              @default("2026-2027")
+  isDraft              Boolean             @default(false)
+  draftData            Json?
+  institutionId        String?
+  institution          Institution?        @relation(fields: [institutionId], references: [id])
+  lastUpdated          DateTime            @default(now())
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+
+  scrutinyFindings     ScrutinyFinding[]
+  evcInspections       EVCInspection[]
+  complianceItems      ComplianceItem[]
+  validityDocuments    DocumentValidityRecord[]
+  documents            ApplicationDocument[]
+  deficiencyNotices    DeficiencyNotice[]
+
+  @@index([currentStage, region])
+  @@index([submissionDate])
+  @@index([priority])
+  @@index([category])
+  @@index([institutionId])
+  @@index([isDraft])
+}
+
+model ApplicationDocument {
+  id                 String       @id @default(uuid())
+  applicationId      String
+  application        Application  @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  institutionId      String
+  institution        Institution  @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  documentType       DocumentType
+  title              String
+  fileName           String
+  fileSize           Int
+  mimeType           String
+  storageKey         String
+  fileHash           String?
+  uploadedById       String
+  uploadedBy         SystemUser   @relation(fields: [uploadedById], references: [id])
+  verificationStatus String       @default("PENDING_REVIEW") // PENDING_REVIEW, VERIFIED, DEFICIENT, RETURNED
+  remarks            String?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  @@index([applicationId])
+  @@index([institutionId])
+}
+
+model DeficiencyNotice {
+  id                   String       @id @default(uuid())
+  applicationId        String
+  application          Application  @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  noticeNumber         String       @unique
+  title                String
+  description          String
+  parameterName        String?
+  requirementRef       String?
+  issuedById           String
+  issuedByName         String
+  issuedRole           UserRole     @default(SCRUTINY_OFFICER)
+  isReleased           Boolean      @default(false)
+  releasedAt           DateTime?
+  dueDate              DateTime?
+  status               String       @default("DRAFT") // DRAFT, ISSUED, RESPONDED, RESOLVED, ESCALATED
+  institutionResponse  String?
+  responseSubmittedAt  DateTime?
+  responseDocumentRef  String?
+  officerReviewNotes   String?
+  reviewedAt           DateTime?
+  reviewedById         String?
+  reviewedByName       String?
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+
+  @@index([applicationId])
+  @@index([isReleased, status])
+}
+
+model Notification {
+  id              String       @id @default(uuid())
+  recipientUserId String?
+  recipientUser   SystemUser?  @relation(fields: [recipientUserId], references: [id])
+  institutionId   String?
+  institution     Institution? @relation(fields: [institutionId], references: [id])
+  title           String
+  message         String
+  type            String       @default("INFO") // INFO, WARNING, DEFICIENCY, DEADLINE, SUCCESS
+  link            String?
+  isRead          Boolean      @default(false)
+  createdAt       DateTime     @default(now())
+
+  @@index([recipientUserId])
+  @@index([institutionId])
+  @@index([isRead])
+}
+
+model ScrutinyFinding {
+  id             String       @id @default(uuid())
+  applicationId  String
+  application    Application  @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  parameterName  String
+  requirementRef String
+  isCompliant    Boolean
+  observation    String?
+  verifiedBy     String?
+  verifiedAt     DateTime?
+  createdAt      DateTime     @default(now())
+
+  @@index([applicationId])
+}
+
+model EVCInspection {
+  id                    String            @id @default(uuid())
+  applicationId         String
+  application           Application       @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  applicationNumber     String?
+  instituteName         String?
+  region                Region?
+  proposedDate          DateTime
+  actualVisitDate       DateTime?
+  status                EVCStatus         @default(PENDING_CONSTITUTION)
+  convenerName          String
+  convenerAffiliation   String
+  isOverdue             Boolean           @default(false)
+  delayHours            Int               @default(0)
+  reportUploadedDate    DateTime?
+  recommendationOutcome String?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  expertMembers         EVCExpertMember[]
+
+  @@index([applicationId])
+  @@index([status])
+  @@index([region])
+}
+
+model EVCExpertMember {
+  id             String        @id @default(uuid())
+  evcId          String
+  evc            EVCInspection @relation(fields: [evcId], references: [id], onDelete: Cascade)
+  name           String
+  designation    String
+  specialization String
+
+  @@index([evcId])
+}
+
+model ComplianceItem {
+  id                   String           @id @default(uuid())
+  applicationId        String
+  application          Application      @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  applicationNumber    String?
+  instituteName        String?
+  region               Region?
+  undertakingType      String
+  description          String
+  grantedDate          DateTime         @default(now())
+  dueDate              DateTime
+  daysRemaining        Int
+  status               ComplianceStatus @default(ACTIVE_PENDING)
+  isOverdue            Boolean          @default(false)
+  submittedDocumentRef String?
+  lastReminderSentDate DateTime?
+  escalationLevel      String           @default("NONE")
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  @@index([applicationId])
+  @@index([status, dueDate])
+}
+
+model DocumentValidityRecord {
+  id                   String                @id @default(uuid())
+  applicationId        String
+  application          Application           @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  instituteName        String?
+  documentType         DocumentType
+  documentIdentifier   String
+  issuingAuthority     String
+  issueDate            DateTime
+  expiryDate           DateTime
+  daysToExpiry         Int
+  validityStatus       ValidityStatus        @default(VALID)
+  alertLevel           String                @default("GREEN")
+  requiredForCategory  ApplicationCategory[] @default([])
+  lastVerificationDate DateTime              @default(now())
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+
+  @@index([applicationId])
+  @@index([validityStatus, expiryDate])
+}
+
+model RegulatoryRule {
+  id                     String              @id @default(uuid())
+  ruleCode               String              @unique
+  applicationCategory    ApplicationCategory
+  requirementTitle       String
+  responsibleRole        UserRole
+  sourceTitle            String
+  chapterSectionPage     String
+  sourceVersion          String
+  effectivePeriod        String
+  verificationStatus     String              @default("VERIFIED")
+  slaDays                Int
+  escalationIntervalDays Int
+  notes                  String
+  isActive               Boolean             @default(true)
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
+
+  @@index([applicationCategory, verificationStatus])
+}
+
+model AuditLogEntry {
+  id              String       @id @default(uuid())
+  timestamp       DateTime     @default(now())
+  actorId         String
+  actorName       String
+  actorRole       UserRole
+  actionCode      String
+  actionTitle     String
+  entityType      String
+  entityId        String
+  details         String
+  ipAddressMasked String
+  previousState   String?
+  newState        String?
+
+  @@index([entityType, entityId])
+  @@index([actorRole])
+  @@index([timestamp])
+}

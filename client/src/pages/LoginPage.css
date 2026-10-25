@@ -1,0 +1,200 @@
+/* ==========================================================================
+   Login page visual redesign — scoped styles (all selectors prefixed `lp-`).
+   Imported only by LoginPage.tsx; does not affect any other screen.
+   ========================================================================== */
+
+.lp-hero {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  color: #ffffff;
+  background:
+    radial-gradient(1200px 520px at 15% -10%, rgba(21, 62, 117, 0.55), transparent 60%),
+    linear-gradient(165deg, #06152d 0%, #0a1b38 55%, #0f294d 100%);
+}
+
+.lp-hero-art {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  animation: lp-reveal 1.1s ease-out 0.1s forwards;
+}
+
+/* Gentle background reveal */
+@keyframes lp-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(1.015);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Soft floating geometric elements */
+@keyframes lp-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(var(--lp-rot, 0deg));
+  }
+  50% {
+    transform: translate3d(0, -12px, 0) rotate(calc(var(--lp-rot, 0deg) + 6deg));
+  }
+}
+
+.lp-float {
+  animation: lp-float 9s ease-in-out infinite;
+  transform-origin: center;
+  transform-box: fill-box;
+  will-change: transform;
+}
+.lp-float-b {
+  animation-duration: 12s;
+  animation-delay: -3s;
+}
+.lp-float-c {
+  animation-duration: 15s;
+  animation-delay: -6s;
+}
+
+/* Slow, subtle rotation of the 24-spoke wheel motif */
+@keyframes lp-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.lp-wheel {
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: lp-spin 140s linear infinite;
+}
+
+/* Content entrance */
+@keyframes lp-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.lp-rise {
+  opacity: 0;
+  animation: lp-rise 0.6s ease-out forwards;
+}
+.lp-rise-1 {
+  animation-delay: 0.05s;
+}
+.lp-rise-2 {
+  animation-delay: 0.15s;
+}
+.lp-rise-3 {
+  animation-delay: 0.25s;
+}
+
+/* Smooth transition when switching portal tabs */
+@keyframes lp-fade {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.lp-fade {
+  animation: lp-fade 0.3s ease-out;
+}
+
+/* Sliding tab indicator */
+.lp-tabs {
+  position: relative;
+}
+.lp-tab-indicator {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: calc(50% - 4px);
+  border-radius: 0.6rem;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(10, 27, 56, 0.18), 0 0 0 1px rgba(10, 27, 56, 0.06);
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.lp-tab-indicator[data-portal='OFFICER'] {
+  transform: translateX(100%);
+}
+
+/* Saffron accent under the card heading */
+.lp-accent {
+  display: inline-block;
+  width: 36px;
+  height: 3px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #f59e0b, #d97706);
+}
+
+/* Restrained focus / hover effects */
+.lp-input {
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+.lp-input:focus {
+  border-color: #153e75;
+  box-shadow: 0 0 0 3px rgba(21, 62, 117, 0.18);
+}
+
+.lp-submit {
+  transition: background-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+}
+.lp-submit:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(6, 21, 45, 0.28);
+}
+.lp-submit:active:not(:disabled) {
+  transform: translateY(0);
+}
+.lp-submit .lp-arrow {
+  transition: transform 0.2s ease;
+}
+.lp-submit:hover:not(:disabled) .lp-arrow {
+  transform: translateX(3px);
+}
+
+.lp-card {
+  box-shadow: 0 1px 2px rgba(10, 27, 56, 0.06), 0 18px 40px -18px rgba(10, 27, 56, 0.28);
+}
+
+/* Trust chips on the hero */
+.lp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #e2e8f0;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-hero-art,
+  .lp-rise {
+    opacity: 1 !important;
+    animation: none !important;
+  }
+  .lp-float,
+  .lp-wheel,
+  .lp-fade {
+    animation: none !important;
+  }
+}
